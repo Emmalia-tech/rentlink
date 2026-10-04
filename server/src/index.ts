@@ -3,11 +3,11 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import dotenv from "dotenv";
-import { pool } from "./db/client.js";
-import authRoutes from "./auth/routes.js";
-import { requireAuth } from "./auth/middleware.js";
-import { db } from "./db/client.js";
+import { pool, db } from "./db/client.js";
 import { users } from "./db/schema.js";
+import authRoutes from "./auth/routes.js";
+import propertyRoutes from "./properties/routes.js";
+import { requireAuth } from "./auth/middleware.js";
 import { eq } from "drizzle-orm";
 
 dotenv.config();
@@ -21,7 +21,7 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan("dev"));
 
-// --- Routes ---
+// --- Health ---
 app.get("/health", (_req: Request, res: Response) => {
   res.json({
     status: "ok",
@@ -48,6 +48,7 @@ app.get("/db-health", async (_req: Request, res: Response) => {
   }
 });
 
+// --- Auth ---
 app.use("/auth", authRoutes);
 
 app.get("/auth/me", requireAuth, async (req: Request, res: Response) => {
@@ -68,10 +69,13 @@ app.get("/auth/me", requireAuth, async (req: Request, res: Response) => {
     .limit(1);
 
   if (!user) return res.status(404).json({ error: "User not found" });
-
   return res.json({ user });
 });
 
+// --- Properties ---
+app.use("/properties", propertyRoutes);
+
+// --- Root ---
 app.get("/", (_req: Request, res: Response) => {
   res.json({
     name: "RentLink Ghana API",
@@ -83,7 +87,8 @@ app.get("/", (_req: Request, res: Response) => {
 // --- Start ---
 app.listen(PORT, () => {
   console.log(`[server] RentLink API running on http://localhost:${PORT}`);
-  console.log(`[server] Health check: http://localhost:${PORT}/health`);
+  console.log(`[server] Health:      http://localhost:${PORT}/health`);
   console.log(`[server] DB health:   http://localhost:${PORT}/db-health`);
   console.log(`[server] Auth:        http://localhost:${PORT}/auth`);
+  console.log(`[server] Properties:  http://localhost:${PORT}/properties`);
 });
